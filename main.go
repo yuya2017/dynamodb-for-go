@@ -1,51 +1,95 @@
 package main
 
 import (
-	"errors"
-	"fmt"
-	"io/ioutil"
-	"net/http"
+	"encoding/json"
+	"log"
+	"os"
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/dynamodb"
+	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
 )
 
-var (
-	// DefaultHTTPGetAddress Default Address
-	DefaultHTTPGetAddress = "https://checkip.amazonaws.com"
-
-	// ErrNoIP No IP found in response
-	ErrNoIP = errors.New("No IP in HTTP response")
-
-	// ErrNon200Response non 200 status code in response
-	ErrNon200Response = errors.New("Non 200 Response found")
-)
+type User struct {
+    ID   int    `json:"id"`
+    Name string `json:"name"`
+}
 
 func handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
-	resp, err := http.Get(DefaultHTTPGetAddress)
-	if err != nil {
-		return events.APIGatewayProxyResponse{}, err
-	}
+    // Environment variables
+    endpoint := os.Getenv("DYNAMODB_ENDPOINT")
+    tableName := os.Getenv("DYNAMODB_TABLE_NAME")
 
-	if resp.StatusCode != 200 {
-		return events.APIGatewayProxyResponse{}, ErrNon200Response
-	}
+    // Request
+    id := request.PathParameters["id"]
 
-	ip, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return events.APIGatewayProxyResponse{}, err
-	}
+    // DynamoDB
+    sess := session.Must(session.NewSession())
+    config := aws.NewConfig().WithRegion("us-east-1")
+    config = config.WithEndpoint(endpoint)
 
-	if len(ip) == 0 {
-		return events.APIGatewayProxyResponse{}, ErrNoIP
-	}
+    db := dynamodb.New(sess, config)
 
-	return events.APIGatewayProxyResponse{
-		Body:       fmt.Sprintf("Hello, %v", string(ip)),
-		StatusCode: 200,
-	}, nil
+    // response, err := db.GetItem(&dynamodb.GetItemInput{
+    //     TableName: aws.String(tableName),
+    //     Key: map[string]*dynamodb.AttributeValue{
+    //         "Id": {
+    //             N: aws.String(id),
+    //         },
+    //     },
+    //     AttributesToGet: []*string{
+    //         aws.String("Id"),
+    //         aws.String("Name"),
+    //     },
+    //     ConsistentRead:         aws.Bool(true),
+    //     ReturnConsumedCapacity: aws.String("NONE"),
+    // })
+    // if err != nil {
+    //     return events.APIGatewayProxyResponse{}, err
+    // }
+
+		// log.Println(response)
+
+		getparam := &dynamodb.GetItemInput{
+			TableName: aws.String(tableName),
+			Key: map[string]*dynamodb.AttributeValue{
+				"Id": {
+					N: aws.String(id),
+				},
+			},
+		}
+
+		response, err := db.GetItem(getparam)
+		log.Println("testです")
+		if err != nil {
+			return events.APIGatewayProxyResponse{
+					Body:       err.Error(),
+					StatusCode: 404,
+			}, err
+		}
+
+
+    user := User{}
+    err = dynamodbattribute.Unmarshal(&dynamodb.AttributeValue{M: response.Item}, &user)
+    if err != nil {
+        return events.APIGatewayProxyResponse{}, err
+    }
+
+    // Json
+    bytes, err := json.Marshal(user)
+    if err != nil {
+        return events.APIGatewayProxyResponse{}, err
+    }
+
+    return events.APIGatewayProxyResponse{
+        Body:       string(bytes),
+        StatusCode: 200,
+    }, nil
 }
 
 func main() {
-	lambda.Start(handler)
+    lambda.Start(handler)
 }

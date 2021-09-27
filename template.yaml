@@ -18,15 +18,17 @@ Resources:
       Handler: apigateway-sample
       Runtime: go1.x
       Tracing: Active # https://docs.aws.amazon.com/lambda/latest/dg/lambda-x-ray.html
+      Policies: AmazonDynamoDBFullAccess
       Events:
         CatchAll:
           Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
           Properties:
-            Path: /hello
+            Path: /users/{id}
             Method: GET
       Environment: # More info about Env Vars: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#environment-object
         Variables:
-          PARAM1: VALUE
+          DYNAMODB_ENDPOINT: "http://dynamodb:8000"
+          DYNAMODB_TABLE_NAME: "User"
 
 Outputs:
   # ServerlessRestApi is an implicit API created out of Events key under Serverless::Function

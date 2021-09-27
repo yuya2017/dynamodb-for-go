@@ -5,7 +5,7 @@ build:
 	GOOS=linux GOARCH=amd64 go build -o apigateway-sample
 
 start:
-	sam local start-api
+	sam local start-api --env-vars test/env.json
 
 validate:
 	sam validate --profile kinoshita
@@ -15,3 +15,9 @@ upload:
 
 deploy:
 	aws --profile kinoshita --region ap-northeast-1 cloudformation deploy --template-file $(PROJECT_ROOT)/packaged.yaml --stack-name apigateway-sample --capabilities CAPABILITY_IAM
+
+create-table:
+	aws --profile kinoshita dynamodb create-table --cli-input-json file://test/user_table.json --endpoint-url http://0.0.0.0:8000
+
+create-data:
+	aws --profile kinoshita dynamodb batch-write-item --request-items file://test/user_table_data.json --endpoint-url http://0.0.0.0:8000
