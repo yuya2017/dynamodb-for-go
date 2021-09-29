@@ -8,6 +8,11 @@ apigateway -> lambda -> dynamodbを構築しています
 ## 使い方
 
 ```
+
+make create-table
+
+make create-data
+
 docker network create lambda-local
 
 docker-compose up -d
