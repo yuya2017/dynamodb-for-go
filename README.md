@@ -1,5 +1,20 @@
 # apigatewqy-sample
 
+samでgoを使ったサンプルです
+apigateway -> lambda -> dynamodbを構築しています
+
+デプロイする場合は環境変数にdbのendpointとtableNameを定義する必要がある
+
+## 使い方
+
+```
+docker network create lambda-local
+
+docker-compose up -d
+
+make start
+```
+
 This is a sample template for apigatewqy-sample - Below is a brief explanation of what we have generated for you:
 
 ```bash
