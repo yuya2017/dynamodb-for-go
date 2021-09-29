@@ -5,7 +5,8 @@ build:
 	GOOS=linux GOARCH=amd64 go build -o apigateway-sample
 
 start:
-	sam local start-api --env-vars test/env.json
+	# sam local start-api --docker-network lambda-local --env-vars test/env.json
+  sam local start-api --docker-network lambda-local
 
 validate:
 	sam validate --profile kinoshita
